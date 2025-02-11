@@ -198,7 +198,7 @@ You are an expert in [Topic]. Generate structured questions along with context a
 
 ---
 
-**Example LLM Response:**  
+### Example LLM Response:  
 ```json
 {
     "paragraph": "Quantum mechanics describes the behavior of subatomic particles...",
