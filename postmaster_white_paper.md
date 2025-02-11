@@ -1,5 +1,7 @@
 # **Postmaster**
 
+Postmaster leverages a composite vector database to bring efficiency and precision to knowledge retrieval.
+
 ## **Limitations of Traditional RAG Approaches**
 
 Traditional Retrieval-Augmented Generation (RAG) systems primarily rely on single-vector embeddings for knowledge retrieval, which can limit efficiency and precision. These approaches typically use a single-vector representation per document, leading to several challenges:
