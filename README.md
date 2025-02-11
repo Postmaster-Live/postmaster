@@ -11,7 +11,7 @@ Traditional Retrieval-Augmented Generation (RAG) systems primarily rely on singl
 **Postmaster** addresses these challenges by introducing **composite embeddings**, which provide richer, multi-perspective representations and enable more context-aware search capabilities.
 
 ---
-### project Structure**
+### Project Structure
 
 ```
 /
