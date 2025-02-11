@@ -24,7 +24,7 @@ This document outlines the **endpoints, ingestion process, vectorization strateg
 |-----------------|--------|-------------|
 | `/api/v1/init`  | POST   | Initializes the database for a tenant. |
 | `/api/v1/ingest` | POST   | Ingests a document, extracts metadata, and stores vector embeddings. |
-| `/api/v1/query`  | GET   | Searches for relevant content and retrieves the top **n** paragraphs using softmax-based ranking. |
+| `/api/v1/query`  | GET   | Searches for relevant content and retrieves the top **n** paragraphs using softmax-based ranking, which the LLM will use to generate the response. |
 
 ---
 
