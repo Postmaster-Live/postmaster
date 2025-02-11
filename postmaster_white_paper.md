@@ -17,9 +17,10 @@ Traditional Retrieval-Augmented Generation (RAG) systems primarily rely on singl
 # **Composite Vector-Based Retrieval System (CVRS)**  
 This document outlines the **endpoints, ingestion process, vectorization strategy, and querying logic** utilizing **composite embeddings** (paragraph, simple questions, complex questions, context, scope) to ensure precise information retrieval.
 
+
 ---
 
-## ** API Endpoints**  
+##  API Endpoints  
 | Endpoint        | Method | Description |
 |-----------------|--------|-------------|
 | `/api/v1/init`  | POST   | Initializes the database for a tenant. |
@@ -27,6 +28,7 @@ This document outlines the **endpoints, ingestion process, vectorization strateg
 | `/api/v1/query`  | GET   | Searches for relevant content and retrieves the top **n** paragraphs using softmax-based ranking, which the LLM will use to generate the response. |
 
 Authentication: All endpoints require an API key in the request header:Authorization: Bearer <your_api_key>
+
 
 ---
 
@@ -425,6 +427,9 @@ The LLM uses the **query + retrieved context** to generate the **final response*
 ---
 
 ## **4️⃣ Final Summary of Workflow**  
+
+### **Initialization (`/api/v1/init`)**
+✅ Create Database  **database tables** and setup other things necessary for initializing the tenant. 
 
 ### **Ingestion (`/api/v1/ingest`)**
 ✅ Parse **document** and extract **paragraphs**.  
