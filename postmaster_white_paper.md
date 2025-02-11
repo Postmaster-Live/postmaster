@@ -164,22 +164,22 @@ Content-Type: application/pdf
      ✅ **Context**  
      ✅ **Scope**  
 
-**LLM Prompt:**
+## LLM Prompt:
 
 You are an expert in [Topic]. Generate structured questions along with context and scope to help someone deeply understand the topic.  
 
-## Guidelines:  
+### Guidelines:  
 - **Context:** Provide a brief background on the topic.  
 - **Scope:** Define the key areas covered within the topic.  
 - **Simple Questions:** Focused on basic facts and definitions.  
 - **Complex Questions:** Require critical thinking, analysis, or multi-step reasoning.  
 - The number of questions should be determined based on the complexity and breadth of the topic.  
 
-## Input:
+### Input:
 - **Topic:** [Topic Name]  
 - **Subtopics:** [List of relevant subtopics]  
 
-## Output Format (JSON):  
+### Output Format (JSON):  
 ```json
 {
   "context": "[Provide a concise background on the topic, explaining its relevance and key concepts.]",
@@ -195,6 +195,8 @@ You are an expert in [Topic]. Generate structured questions along with context a
     "[... More as needed]"
   ]
 }
+
+---
 
 **Example LLM Response:**  
 ```json
