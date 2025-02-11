@@ -19,7 +19,7 @@ This document outlines the **endpoints, ingestion process, vectorization strateg
 
 ---
 
-## **1️⃣ API Endpoints**  
+## ** API Endpoints**  
 | Endpoint        | Method | Description |
 |-----------------|--------|-------------|
 | `/api/v1/init`  | POST   | Initializes the database for a tenant. |
@@ -29,6 +29,102 @@ This document outlines the **endpoints, ingestion process, vectorization strateg
 Authentication: All endpoints require an API key in the request header:Authorization: Bearer <your_api_key>
 
 ---
+
+
+### **1️⃣ Initialization Method**: `/api/v1/init`
+
+#### **Purpose**:
+The `init` method initializes the necessary infrastructure and databases for a specific tenant.
+
+#### **Request Method**:
+- **POST**
+
+#### **Endpoint**:
+```
+POST /api/v1/init
+```
+
+#### **Request Payload**:
+```json
+{
+  "tenant_id": "abc123",
+  "vector_db": {
+    "type": "pinecone",
+    "url": "https://pinecone.io",
+    "api_key": "pinecone-key"
+  }
+}
+```
+
+#### **Request Parameters**:
+
+1. **`tenant_id`**:
+   - **Description**: A unique identifier for the tenant in the system.
+   - **Type**: String
+   - **Example**: `"abc123"`
+
+2. **`vector_db`**:
+   - **Description**: Specifies the vector database to be used for storing embeddings.
+   - **Type**: Object
+     - **`type`**: The type of vector database (e.g., Pinecone, Chroma).
+     - **`url`**: The URL to access the vector database.
+     - **`api_key`**: The API key required for authentication to the vector database.
+   - **Example**:  
+     ```json
+     {
+       "type": "pinecone",
+       "url": "https://pinecone.io",
+       "api_key": "pinecone-key"
+     }
+     ```
+
+#### **Response**:
+If successful, the response indicates that the tenant-specific configuration has been initialized.
+
+**Success Response**:
+```json
+{
+  "status": "success",
+  "message": "Tenant 'abc123' initialized successfully."
+}
+```
+
+#### **Failure Response**:
+If there’s any issue with the provided data (e.g., invalid API keys, incorrect URLs), the response will detail the error.
+
+**Error Response**:
+```json
+{
+  "status": "error",
+  "message": "Invalid API key for the vector database."
+}
+```
+
+#### **Process**:
+1. **Validate Input**: The system checks that all required fields are provided and valid, including the tenant ID and vector database configuration.
+2. **Configure Vector Database**: The system sets up the chosen vector database (e.g., Pinecone, Chroma) and authenticates using the provided credentials.
+3. **Return Success**: Once the initialization is complete, the system returns a success response.
+
+#### **Usage Example**:
+
+Let’s assume you want to initialize a tenant with `tenant_id="abc123"` and configure Pinecone as the vector database. You would send the following request:
+
+```bash
+curl -X POST "https://your-api-url.com/api/v1/init" \
+-H "Authorization: Bearer your-api-key" \
+-H "Content-Type: application/json" \
+-d '{
+  "tenant_id": "abc123",
+  "vector_db": {
+    "type": "pinecone",
+    "url": "https://pinecone.io",
+    "api_key": "pinecone-key"
+  }
+}'
+```
+
+----
+
 
 ## **2️⃣ Ingestion Process** (`/api/v1/ingest`)
 
