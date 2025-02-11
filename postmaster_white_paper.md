@@ -343,6 +343,7 @@ The LLM uses the **query + retrieved context** to generate the **final response*
 ✅ Select **top n paragraphs** as **context**.  
 ✅ Send **query + context** to the **LLM**.  
 ✅ Return **final response** to the user.  
+
 ---
 
 ## 5️⃣ Advantages of This Approach
