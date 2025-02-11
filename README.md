@@ -11,9 +11,6 @@ Traditional Retrieval-Augmented Generation (RAG) systems primarily rely on singl
 **Postmaster** addresses these challenges by introducing **composite embeddings**, which provide richer, multi-perspective representations and enable more context-aware search capabilities.
 
 ---
-The content here seems mostly clear, but I would refine the softmax reference for clarity and flow, as well as adjust a few small aspects for consistency. Here's the revised version:
-
----
 
 # **Composite Vector-Based Retrieval System (CVRS)**  
 This document outlines the **endpoints, ingestion process, vectorization strategy, and querying logic** utilizing **composite embeddings** (paragraph, simple questions, complex questions, context, scope) to ensure precise information retrieval.
@@ -193,9 +190,6 @@ store_embeddings(paragraph, {
     "scope": scope
 })
 ```
-
----
-Certainly! Here’s the updated version, including the Softmax formula written in LaTeX, just as you have:
 
 ---
 
