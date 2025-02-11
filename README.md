@@ -1,34 +1,46 @@
-# Postmaster
-Postmaster is a composite vector retrieval system to bring efficiency and precision to knowledge retrieval.
+# **Postmaster**
 
+## **Limitations of Traditional RAG Approaches**
 
-# **Composite Vector-Based Retrieval System (CVRS)**
-This document describes the **endpoints, ingestion process, vectorization strategy, and querying logic** using **multiple embeddings** (paragraph, simple questions, complex questions, context, scope) for precise information retrieval.
+Traditional Retrieval-Augmented Generation (RAG) systems primarily rely on single-vector embeddings for knowledge retrieval, which can limit efficiency and precision. These approaches typically use a single-vector representation per document, leading to several challenges:
+
+1. **Loss of Context** – A single embedding struggles to capture multiple facets of a document, leading to ambiguous or incomplete retrieval.
+2. **Shallow Relevance Matching** – Keyword-based vector search often prioritizes surface-level similarity rather than capturing deeper semantic meaning.
+3. **Limited Adaptability** – Traditional RAG systems lack the ability to dynamically adjust search granularity based on the complexity of the query.
+
+**Postmaster** addresses these challenges by introducing **composite embeddings**, which provide richer, multi-perspective representations and enable more context-aware search capabilities.
+
+---
+The content here seems mostly clear, but I would refine the softmax reference for clarity and flow, as well as adjust a few small aspects for consistency. Here's the revised version:
+
+---
+
+# **Composite Vector-Based Retrieval System (CVRS)**  
+This document outlines the **endpoints, ingestion process, vectorization strategy, and querying logic** utilizing **composite embeddings** (paragraph, simple questions, complex questions, context, scope) to ensure precise information retrieval.
 
 ---
 
 ## **1️⃣ API Endpoints**  
 | Endpoint        | Method | Description |
-|---------------|--------|-------------|
-| `/api/v1/init`  | POST  | Initializes the database for a tenant. |
-| `/api/v1/ingest` | POST  | Ingests a document, extracts metadata, and stores vector embeddings. |
-| `/api/v1/query`  | GET   | Searches for relevant content and retrieves top **n** paragraphs using softmax. |
+|-----------------|--------|-------------|
+| `/api/v1/init`  | POST   | Initializes the database for a tenant. |
+| `/api/v1/ingest` | POST   | Ingests a document, extracts metadata, and stores vector embeddings. |
+| `/api/v1/query`  | GET   | Searches for relevant content and retrieves the top **n** paragraphs using softmax-based ranking. |
 
 ---
 
-## **2️⃣ Ingestion Process** (`/api/v1/ingest`)  
+## **2️⃣ Ingestion Process** (`/api/v1/ingest`)
+
 ### **Step 1: User Uploads a Document**  
 The user provides:  
 - **Document URL** (PDF, DOC, TXT, etc.)  
-- **Vector DB** (Pinecone, Chroma, FAISS, PGVector)  
+- **Vector DB** (Pinecone, Chroma, Snowflake, PGVector)  
 - **Encoding Model API Key & URL**  
 - **LLM API Key & Model**
 
-Ah, I see! You want the payload for the **POST request** to be **separate** from the headers and just want to focus on the body of the request. Here's how you can send the document as an attachment in the **multipart/form-data** request payload.
-
 ### **POST Payload for Document Ingestion:**
 
-Here’s what the **payload** would look like when sending the document as an attachment:
+Here’s an example of what the **payload** would look like when sending the document as an attachment:
 
 ```json
 {
@@ -52,28 +64,27 @@ Here’s what the **payload** would look like when sending the document as an at
   "document": "<binary PDF content>"
 }
 ```
-
 ### **Explanation of Payload Fields:**
 
 1. **tenant_id**: A unique identifier for the tenant (user).
-2. **vector_db**: The metadata required to access the vector DB (e.g., Pinecone).
-   - **type**: The type of the vector DB (Pinecone, Chroma, FAISS, PGVector).
+2. **vector_db**: Metadata for accessing the vector database (e.g., Pinecone, Snowflake).
+   - **type**: The type of vector DB (Pinecone, Chroma, Snowflake, PGVector).
    - **url**: URL to the vector DB.
    - **api_key**: API key for authentication to the vector DB.
-3. **encoding_model**: The metadata for the encoding model used to generate embeddings.
-   - **model**: The model name for the encoder.
+3. **encoding_model**: Metadata for the encoding model used to generate embeddings.
+   - **model**: The encoder model's name.
    - **url**: URL to the encoder model API.
    - **api_key**: API key for authentication to the encoder.
-4. **llm_model**: The metadata for the large language model.
+4. **llm_model**: Metadata for the large language model (LLM).
    - **model**: The model name (e.g., GPT-4).
    - **url**: URL to the LLM API.
    - **api_key**: API key for authentication to the LLM.
-5. **doc_type**: The type of document being uploaded (e.g., "PDF").
-6. **document**: This is the actual document being uploaded. You would typically send this as **binary data** as part of the `multipart/form-data` payload.
+5. **doc_type**: The document type being uploaded (e.g., "PDF").
+6. **document**: The actual document to be uploaded, typically sent as **binary data** within the `multipart/form-data` payload.
 
 ### **Multipart/form-data Request Example:**
 
-In a **multipart/form-data** request, the **document** is the file that is uploaded along with other fields.
+In a **multipart/form-data** request, the **document** is uploaded along with other fields.
 
 ```http
 POST /api/v1/ingest HTTP/1.1
@@ -134,18 +145,19 @@ Content-Type: application/pdf
 
 ### **Key Parts of the Request:**
 
-- **`Content-Disposition`**: Used to specify how the parts are handled. For the file part, it specifies `filename="research.pdf"`, which indicates that the uploaded file is named "research.pdf".
-- **`Content-Type`**: For the file part, the `Content-Type` is `application/pdf` to indicate that the uploaded file is a PDF.
-- **The file content**: The binary data of the PDF document is sent where `<binary file content here>` is indicated.
+- **`Content-Disposition`**: Specifies how parts are handled. For the file part, it specifies `filename="research.pdf"`, indicating the file name.
+- **`Content-Type`**: For the file part, `application/pdf` indicates the file type.
+- **The file content**: The PDF binary data is sent where `<binary file content here>` is indicated.
 
 ---
+
 ### **Step 2: Backend Processing**  
 1. **Load and Parse the Document**  
-   - Extract text, remove noise, chunk into **paragraphs**.  
-   - If a **paragraph is too large**, return an error.
+   - Extract text, remove noise, and chunk into **paragraphs**.  
+   - If a **paragraph is too large**, an error is returned.
 
 2. **Generate Metadata using LLM**  
-   - For each paragraph, call LLM to generate:  
+   - For each paragraph, the LLM is called to generate:  
      ✅ **Simple Questions**  
      ✅ **Complex Questions**  
      ✅ **Context**  
@@ -183,15 +195,20 @@ store_embeddings(paragraph, {
 ```
 
 ---
+Certainly! Here’s the updated version, including the Softmax formula written in LaTeX, just as you have:
 
-## **3️⃣ Query Process (`/api/v1/query`)**  
+---
+
+## **3️⃣ Query Process (`/api/v1/query`)**
+
 ### **Step 1: User Sends a Query**  
-User queries the system using `/api/v1/query?query="How does quantum mechanics relate to general relativity?"`
+The user queries the system using:  
+`/api/v1/query?query="How does quantum mechanics relate to general relativity?"`
 
 ---
 
 ### **Step 2: Convert Query to Embedding**  
-- The query is **converted into a vector embedding** using the **same encoding model**.
+The query is **converted into a vector embedding** using the **same encoding model**.
 
 ```json
 {
@@ -204,8 +221,8 @@ User queries the system using `/api/v1/query?query="How does quantum mechanics r
 ---
 
 ### **Step 3: Search Across All 5 Embeddings**  
-- Search the **Vector DB** for the **top n** most similar results.  
-- The system retrieves **paragraphs** and their **associated metadata**.
+The system searches the **Vector DB** for the **top n** most similar results.  
+It retrieves **paragraphs** and their **associated metadata**.
 
 ```python
 query_embedding = get_query_embedding(user_query)
@@ -215,14 +232,14 @@ results = vector_db.query(vector=query_embedding, top_k=n, include_metadata=True
 ---
 
 ### **Step 4: Apply Softmax to Rank Results**  
-- Convert **similarity scores** into **probabilities** using the **softmax function**.
+The system converts the **similarity scores** into **probabilities** using the **softmax function**.
 
 ### Softmax Formula
 
 ![Softmax Formula](https://latex.codecogs.com/png.latex?S_i%20%3D%20%5Cfrac%7Be%5E%7Bx_i%7D%7D%7B%5Csum_%7Bj%3D1%7D%5En%20e%5E%7Bx_j%7D%7D)
 
-
 ##### **Example Softmax Calculation:**
+
 ```python
 import numpy as np
 
@@ -238,7 +255,7 @@ final_scores = softmax(similarity_scores)
 ---
 
 ### **Step 5: Select the Top n Paragraphs**  
-- The **top n** paragraphs are selected **based on softmax ranking**.
+The **top n** paragraphs are selected **based on softmax ranking**.
 
 ```python
 sorted_paragraphs = sorted(results, key=lambda x: x['softmax_score'], reverse=True)[:n]
@@ -248,7 +265,7 @@ selected_paragraphs = [p["text"] for p in sorted_paragraphs]
 ---
 
 ### **Step 6: Send Query + Context to LLM**  
-- The selected **paragraphs** are sent **as context** to the LLM **along with the user query**.
+The selected **paragraphs** are sent **as context** to the LLM **along with the user query**.
 
 **Example API Request to LLM:**  
 ```json
