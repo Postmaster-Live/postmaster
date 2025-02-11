@@ -26,6 +26,8 @@ This document outlines the **endpoints, ingestion process, vectorization strateg
 | `/api/v1/ingest` | POST   | Ingests a document, extracts metadata, and stores vector embeddings. |
 | `/api/v1/query`  | GET   | Searches for relevant content and retrieves the top **n** paragraphs using softmax-based ranking, which the LLM will use to generate the response. |
 
+Authentication: All endpoints require an API key in the request header:Authorization: Bearer <your_api_key>
+
 ---
 
 ## **2️⃣ Ingestion Process** (`/api/v1/ingest`)
@@ -161,6 +163,38 @@ Content-Type: application/pdf
      ✅ **Complex Questions**  
      ✅ **Context**  
      ✅ **Scope**  
+
+**LLM Prompt:**
+
+You are an expert in [Topic]. Generate structured questions along with context and scope to help someone deeply understand the topic.  
+
+## Guidelines:  
+- **Context:** Provide a brief background on the topic.  
+- **Scope:** Define the key areas covered within the topic.  
+- **Simple Questions:** Focused on basic facts and definitions.  
+- **Complex Questions:** Require critical thinking, analysis, or multi-step reasoning.  
+- The number of questions should be determined based on the complexity and breadth of the topic.  
+
+## Input:
+- **Topic:** [Topic Name]  
+- **Subtopics:** [List of relevant subtopics]  
+
+## Output Format (JSON):  
+```json
+{
+  "context": "[Provide a concise background on the topic, explaining its relevance and key concepts.]",
+  "scope": "[Define the boundaries of the discussion—what aspects of the topic will be explored.]",
+  "simple_questions": [
+    "[Question 1]",
+    "[Question 2]",
+    "[... More as needed]"
+  ],
+  "complex_questions": [
+    "[Question 1]",
+    "[Question 2]",
+    "[... More as needed]"
+  ]
+}
 
 **Example LLM Response:**  
 ```json
