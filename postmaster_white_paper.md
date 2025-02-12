@@ -397,7 +397,7 @@ By considering all results, softmax avoids over-relying on a single embedding ty
 #### Score Normalization:
 Softmax accounts for differences in absolute score magnitudes. For example, a score of 0.9 in one query might be weaker than 0.8 in another, depending on the distribution of all scores. Softmax adjusts for this dynamically.
 
-In short: Softmax ensures the system compares results contextually, not just absolutely, leading to better-ranked, more useful paragraphs for the LLM to generate answers.
+In short, Softmax ensures the system compares results contextually, not just absolutely, leading to better-ranked, more useful paragraphs for the LLM to generate answers.
 
 ---
 
