@@ -384,6 +384,22 @@ final_scores = softmax(similarity_scores)
 ```
 
 ---
+### Why is Softmax used instead of selecting the maximum score?
+
+Softmax-based ranking is used instead of simply selecting the maximum score because it weights all results proportionally rather than relying on a single "best" match.
+
+#### Relative Relevance:
+Softmax converts raw similarity scores into probabilities, reflecting how much each result stands out relative to others. A paragraph with a slightly lower score might still be highly relevant if other options are weak, which maximum-score selection would miss.
+
+#### Balanced Context:
+By considering all results, softmax avoids over-relying on a single embedding type (e.g., a paragraph might score lower in "simple questions" but higher in "context" embeddings). This ensures a more holistic selection of context for the LLM.
+
+#### Score Normalization:
+Softmax accounts for differences in absolute score magnitudes. For example, a score of 0.9 in one query might be weaker than 0.8 in another, depending on the distribution of all scores. Softmax adjusts for this dynamically.
+
+In short: Softmax ensures the system compares results contextually, not just absolutely, leading to better-ranked, more useful paragraphs for the LLM to generate answers.
+
+---
 
 ### **Step 5: Select the Top n Paragraphs**  
 The **top n** paragraphs are selected **based on softmax ranking**.
