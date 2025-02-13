@@ -26,7 +26,7 @@ Traditional Retrieval-Augmented Generation (RAG) systems primarily rely on singl
 └── .env              # Environment variables
 ```
 
-## ** System Architecture**  
+## System Architecture 
 - **Flask API**: Handles ingestion and querying of documents.  
 - **Snowflake Database**: Stores extracted paragraphs and metadata.  
 - **Mistral-Small-2409**: Generates metadata for each paragraph.  
@@ -36,7 +36,7 @@ Traditional Retrieval-Augmented Generation (RAG) systems primarily rely on singl
 
 ---
 
-## ** Snowflake Database Table**
+##  Snowflake Database Table
 ```sql
 CREATE TABLE DOCUMENTS (
     ID STRING PRIMARY KEY, 
@@ -52,7 +52,7 @@ CREATE TABLE DOCUMENTS (
 
 ---
 
-## ** Snowflake UDF for Mistral API Call**  
+##  Snowflake UDF for Mistral API Call 
 ```sql
 CREATE OR REPLACE FUNCTION GENERATE_METADATA(paragraph STRING)
 RETURNS OBJECT
@@ -86,7 +86,7 @@ $$;
 ---
 
 
-## ** `.env`**
+##  `.env`
 ```
 SNOWFLAKE_USER=your_user
 SNOWFLAKE_PASSWORD=your_password
@@ -118,7 +118,7 @@ MISTRAL_API_KEY=your_mistral_key
 
 ---
 
-## ** Execution Flow**
+##  Execution Flow
 1. **Initialization (`/api/v1/init`)**  
    - Creates the Snowflake table if it doesn't exist.  
 
