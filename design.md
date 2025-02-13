@@ -1,7 +1,7 @@
-# **PostMaster Design Document: Snowflake + Mistral Integration for Document Processing using CVRS **  
+# PostMaster Design Document: Snowflake + Mistral Integration for Document Processing using CVRS  
 
 ## **1. Overview**  
-Postman enables to ingests documents, extracts paragraphs, and generates metadata (simple questions, complex questions, context, and scope) using the **Mistral-Small-2409** model. The processed data is stored in **Snowflake**, and queries are optimized using a **Softmax-based ranking** mechanism as described in the referenced paper.  
+Postman facilitates document ingestion, paragraph extraction, and metadata generation (simple questions, complex questions, context, and scope) using the Mistral-Small-2409 model. The processed data is stored in Snowflake, with queries optimized through a Softmax-based ranking mechanism as outlined in the Postman Whitepaper.
 
 ## **2. System Architecture**  
 - **Flask API**: Handles ingestion and querying of documents.  
