@@ -1,4 +1,4 @@
--- Create table for documents
+-- Create document table
 CREATE TABLE IF NOT EXISTS DOCUMENTS (
     ID STRING PRIMARY KEY,
     FILENAME STRING,
@@ -13,10 +13,11 @@ CREATE TABLE IF NOT EXISTS PARAGRAPH_ANALYSIS (
     SIMPLE_QUESTIONS STRING,
     COMPLEX_QUESTIONS STRING,
     CONTEXT STRING,
-    SCOPE STRING
+    SCOPE STRING,
+    SCORE FLOAT
 );
 
--- Create Snowflake UDF for question generation
+-- Create Snowflake UDF for question generation using Mistral
 CREATE OR REPLACE FUNCTION GENERATE_QUESTIONS(TEXT STRING) 
 RETURNS OBJECT 
 LANGUAGE PYTHON 
@@ -26,10 +27,13 @@ PACKAGES = ('requests')
 AS $$
 import requests
 import json
+import os
+
+API_KEY = os.getenv("MISTRAL_API_KEY")
 
 def generate_questions(text):
-    """Call OpenAI API to generate questions, context, and scope."""
-    API_URL = "https://api.openai.com/v1/chat/completions"
+    """Call Mistral API to generate questions."""
+    API_URL = "https://api.mistral.ai/v1/chat/completions"
     HEADERS = {
         "Authorization": f"Bearer {API_KEY}",
         "Content-Type": "application/json"
@@ -45,7 +49,7 @@ def generate_questions(text):
     """
 
     data = {
-        "model": "gpt-4-turbo",
+        "model": "mistral-small-2409",
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0.7
     }
