@@ -1,6 +1,4 @@
-werkzeug
-Flask-SQLAlchemy
-SQLAlchemy
 Flask
-flask_cors
-psycopg2
+requests
+snowflake-connector-python
+PyMuPDF
