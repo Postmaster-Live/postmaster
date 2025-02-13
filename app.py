@@ -1,29 +1,31 @@
 from flask import Flask, request, jsonify
 from config import Config
-from models import db
 from services.document import ingest_document, query_document
+from models import SnowflakeDB
 
 app = Flask(__name__)
 app.config.from_object(Config)
-db.init_app(app)
 
-# Route to initialize the database
 @app.route('/api/v1/init', methods=['POST'])
 def init_db():
-    db.create_all()
-    return jsonify({"message": "Database initialized successfully."}), 200
+    """Initialize Snowflake tables and UDFs."""
+    db = SnowflakeDB()
+    with open("snowflake_setup.sql", "r") as f:
+        queries = f.read().split(";")
+        for query in queries:
+            if query.strip():
+                db.execute_query(query)
+    db.commit()
+    db.close()
+    return jsonify({"message": "Snowflake tables & UDFs initialized successfully."})
 
-# Route to ingest a document
 @app.route('/api/v1/ingest', methods=['POST'])
 def ingest():
-    data = request.json
-    return ingest_document(data)
+    return ingest_document(request.json)
 
-# Route to query documents
 @app.route('/api/v1/query', methods=['GET'])
 def query():
-    query_text = request.args.get('query')
-    return query_document(query_text)
+    return query_document(request.args.get('query'))
 
 if __name__ == '__main__':
     app.run(debug=True)
