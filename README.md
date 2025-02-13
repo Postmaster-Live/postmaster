@@ -131,4 +131,9 @@ MISTRAL_API_KEY=your_mistral_key
    - Retrieves relevant paragraphs from Snowflake.  
    - Uses a **Softmax-based ranking** for optimal paragraph selection.  
 
+---
 
+##  Future
+
+1. Vector Database Connectors: Postgres, Chroma, Pinecone
+2. LLM: OpenAI, Anthropic, Llama, Gemini, Cohere, HuggingFace, 
