@@ -1,14 +1,26 @@
-from flask_sqlalchemy import SQLAlchemy
-from pgvector.sqlalchemy import Vector
+import snowflake.connector
+from config import Config
 
-db = SQLAlchemy()
+class SnowflakeDB:
+    def __init__(self):
+        self.conn = snowflake.connector.connect(
+            user=Config.SNOWFLAKE_USER,
+            password=Config.SNOWFLAKE_PASSWORD,
+            account=Config.SNOWFLAKE_ACCOUNT,
+            database=Config.SNOWFLAKE_DATABASE,
+            schema=Config.SNOWFLAKE_SCHEMA,
+            warehouse=Config.SNOWFLAKE_WAREHOUSE,
+            role=Config.SNOWFLAKE_ROLE
+        )
+        self.cursor = self.conn.cursor()
 
-class Document(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.String(100), nullable=False)
-    doc_type = db.Column(db.String(50), nullable=False)
-    content = db.Column(db.Text, nullable=False)
-    vector = db.Column(Vector(1536), nullable=False)  # Adjust dimension as per your model
+    def execute_query(self, query, params=None):
+        self.cursor.execute(query, params)
+        return self.cursor.fetchall()
 
-    def __repr__(self):
-        return f"<Document {self.id} - {self.tenant_id}>"
+    def commit(self):
+        self.conn.commit()
+
+    def close(self):
+        self.cursor.close()
+        self.conn.close()
