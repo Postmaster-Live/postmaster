@@ -9,8 +9,6 @@ class SnowflakeDB:
             account=Config.SNOWFLAKE_ACCOUNT,
             database=Config.SNOWFLAKE_DATABASE,
             schema=Config.SNOWFLAKE_SCHEMA,
-            warehouse=Config.SNOWFLAKE_WAREHOUSE,
-            role=Config.SNOWFLAKE_ROLE
         )
         self.cursor = self.conn.cursor()
 
