@@ -64,10 +64,12 @@ def ingest_document(data):
         paragraph_id = str(uuid.uuid4())
         qa_data = generate_questions_mistral(para)
 
+        # Cast NP.Float64 to python float for Snowflake
+        # TODO figure out how to increase precision if necesary
         db.execute_query(
             """INSERT INTO PARAGRAPH_ANALYSIS (ID, DOCUMENT_ID, PARAGRAPH, SIMPLE_QUESTIONS, COMPLEX_QUESTIONS, CONTEXT, SCOPE, SCORE) 
                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
-            (paragraph_id, document_id, para, qa_data, "", "", "", softmax_scores[idx])
+            (paragraph_id, document_id, para, qa_data, "", "", "", float(softmax_scores[idx]))
         )
 
     db.commit()
