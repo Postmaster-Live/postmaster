@@ -1,5 +1,0 @@
-# Ignore users credential file
-/.env
-
-# Ignore any pycache files created when running Postmaster
-**/__pycache__/
