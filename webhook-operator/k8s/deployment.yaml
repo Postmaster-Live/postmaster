@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhook-operator
+  namespace: default
+  labels:
+    app: webhook-operator
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: webhook-operator
+  template:
+    metadata:
+      labels:
+        app: webhook-operator
+    spec:
+      serviceAccountName: webhook-operator
+      containers:
+      - name: operator
+        image: your-registry/webhook-operator:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          valueFrom:
+            configMapKeyRef:
+              name: webhook-kafka-config
+              key: bootstrap_servers
+        - name: KAFKA_SASL_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: webhook-kafka-secret
+              key: sasl_username
+        - name: KAFKA_SASL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: webhook-kafka-secret
+              key: sasl_password
+        - name: KAFKA_SASL_MECHANISM
+          valueFrom:
+            secretKeyRef:
+              name: webhook-kafka-secret
+              key: sasl_mechanism
+        - name: API_SIGNING_KEY
+          valueFrom:
+            secretKeyRef:
+              name: webhook-operator-api
+              key: api_signing_key
+        - name: EXTERNAL_URL
+          value: "https://webhooks.example.com"
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: RUST_LOG
+          value: "webhook_operator=info,tower_http=info"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webhook-operator
+  namespace: default
+  labels:
+    app: webhook-operator
+spec:
+  type: LoadBalancer
+  selector:
+    app: webhook-operator
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http

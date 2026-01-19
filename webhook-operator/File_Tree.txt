@@ -1,0 +1,34 @@
+webhook-operator/
+├── Cargo.toml                      # Rust dependencies
+├── Dockerfile                      # Multi-stage build
+├── Makefile                        # Build/deploy automation
+├── docker-compose.yml              # Local Kafka for development
+├── .gitignore                      # Git exclusions
+│
+├── README.md                       # Main documentation
+├── INSTALL.md                      # Installation guide
+├── LOCAL_DEVELOPMENT.md            # Development guide
+│
+├── src/
+│   ├── main.rs                     # Entry point & HTTP server
+│   ├── config.rs                   # Environment configuration
+│   ├── crd.rs                      # WebhookHandler CRD definition
+│   ├── controller.rs               # Watch & sync CRDs
+│   ├── kafka.rs                    # Kafka producer client
+│   ├── signature.rs                # HMAC signature verification
+│   ├── state.rs                    # Shared application state
+│   └── handlers/
+│       ├── mod.rs                  # Module exports
+│       ├── config.rs               # POST /config endpoint
+│       ├── webhook.rs              # POST /handler/<uuid> endpoint
+│       └── health.rs               # Health/readiness probes
+│
+├── k8s/
+│   ├── crd.yaml                    # CustomResourceDefinition
+│   ├── rbac.yaml                   # ServiceAccount, Role, Binding
+│   ├── config.yaml                 # ConfigMap & Secrets (template)
+│   └── deployment.yaml             # Deployment & Service
+│
+└── examples/
+    ├── create-handler.sh           # Script to create webhook handler
+    └── send-webhook.sh             # Script to send test webhooks

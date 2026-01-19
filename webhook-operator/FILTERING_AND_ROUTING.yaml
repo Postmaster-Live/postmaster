@@ -1,0 +1,593 @@
+# Filtering and Routing Guide
+
+The webhook operator supports advanced filtering and routing capabilities, allowing you to:
+- **Filter out** unwanted events before they reach Kafka
+- **Route** events to different topics based on payload content
+
+This is particularly useful for multi-tenant scenarios where different customers or accounts need isolated data streams.
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Filtering](#filtering)
+  - [Filter Operators](#filter-operators)
+  - [Filter Examples](#filter-examples)
+- [Routing](#routing)
+  - [Routing Logic](#routing-logic)
+  - [Routing Examples](#routing-examples)
+- [JSONPath Syntax](#jsonpath-syntax)
+- [Complete Examples](#complete-examples)
+  - [Zoom Meeting Events](#zoom-meeting-events)
+  - [Stripe Webhooks](#stripe-webhooks)
+  - [GitHub Webhooks](#github-webhooks)
+- [Best Practices](#best-practices)
+
+## Overview
+
+When creating a webhook handler, you can optionally specify:
+
+1. **`filters`** - Array of filter rules. If any filter fails, the event is discarded.
+2. **`routes`** - Array of routing rules. First matching rule determines the topic.
+3. **`topic`** - Default topic used when no routing rule matches (or no routes specified).
+
+**Processing Order:**
+```
+Incoming Webhook
+    ↓
+Signature Verification
+    ↓
+Apply Filters (discard if any fail)
+    ↓
+Apply Routing (determine topic)
+    ↓
+Send to Kafka Topic
+```
+
+## Filtering
+
+Filters allow you to discard events before they reach Kafka. All filters must pass for an event to be processed.
+
+### Filter Structure
+
+```json
+{
+  "path": "$.payload.account_id",
+  "operator": "not_in",
+  "value": ["blocked1", "blocked2"]
+}
+```
+
+- **`path`**: JSONPath expression to extract value from the webhook payload
+- **`operator`**: Comparison operator (see below)
+- **`value`**: Value or array of values to compare against
+
+### Filter Operators
+
+| Operator | Description | Value Type | Example |
+|----------|-------------|------------|---------|
+| `equals` | Exact match | String or Number | `"premium"` |
+| `not_equals` | Does not match | String or Number | `"test"` |
+| `in` | Value is in array | Array of Strings or Numbers | `["active", "pending"]` |
+| `not_in` | Value is not in array | Array of Strings or Numbers | `["blocked", "suspended"]` |
+| `contains` | String contains substring | String | `"@company.com"` |
+| `not_contains` | String does not contain | String | `"test"` |
+
+### Filter Examples
+
+**Example 1: Block specific account IDs**
+```json
+{
+  "filters": [
+    {
+      "path": "$.payload.account_id",
+      "operator": "not_in",
+      "value": ["test_account", "blocked_account_1"]
+    }
+  ]
+}
+```
+
+**Example 2: Only allow specific event types**
+```json
+{
+  "filters": [
+    {
+      "path": "$.event",
+      "operator": "in",
+      "value": ["user.created", "user.updated", "user.deleted"]
+    }
+  ]
+}
+```
+
+**Example 3: Filter by email domain**
+```json
+{
+  "filters": [
+    {
+      "path": "$.payload.user.email",
+      "operator": "contains",
+      "value": "@company.com"
+    }
+  ]
+}
+```
+
+**Example 4: Multiple filters (all must pass)**
+```json
+{
+  "filters": [
+    {
+      "path": "$.payload.account_id",
+      "operator": "not_in",
+      "value": ["blocked1", "blocked2"]
+    },
+    {
+      "path": "$.event_type",
+      "operator": "in",
+      "value": ["payment.succeeded", "payment.failed"]
+    },
+    {
+      "path": "$.payload.amount",
+      "operator": "not_equals",
+      "value": 0
+    }
+  ]
+}
+```
+
+## Routing
+
+Routing rules determine which Kafka topic receives the event based on payload content.
+
+### Routing Structure
+
+```json
+{
+  "routes": [
+    {
+      "path": "$.payload.account_id",
+      "mapping": [
+        {
+          "value": "account_123",
+          "topic": "webhooks.account-123"
+        },
+        {
+          "value": "account_456",
+          "topic": "webhooks.account-456"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Routing Logic
+
+1. Routes are evaluated in order
+2. First matching route determines the topic
+3. If no route matches, the default `topic` is used
+4. You can have multiple routing rules (first match wins)
+
+### Routing Examples
+
+**Example 1: Route by account ID**
+```json
+{
+  "topic": "webhooks.default",
+  "routes": [
+    {
+      "path": "$.payload.account_id",
+      "mapping": [
+        {"value": "enterprise_123", "topic": "webhooks.enterprise.123"},
+        {"value": "enterprise_456", "topic": "webhooks.enterprise.456"},
+        {"value": "startup_789", "topic": "webhooks.startup.789"}
+      ]
+    }
+  ]
+}
+```
+
+**Example 2: Route by event type**
+```json
+{
+  "topic": "webhooks.other",
+  "routes": [
+    {
+      "path": "$.event",
+      "mapping": [
+        {"value": "payment.succeeded", "topic": "payments.success"},
+        {"value": "payment.failed", "topic": "payments.failed"},
+        {"value": "refund.created", "topic": "refunds"}
+      ]
+    }
+  ]
+}
+```
+
+**Example 3: Route by environment**
+```json
+{
+  "topic": "webhooks.production",
+  "routes": [
+    {
+      "path": "$.metadata.environment",
+      "mapping": [
+        {"value": "staging", "topic": "webhooks.staging"},
+        {"value": "development", "topic": "webhooks.dev"}
+      ]
+    }
+  ]
+}
+```
+
+## JSONPath Syntax
+
+The operator supports a simplified JSONPath syntax for extracting values from webhook payloads.
+
+### Supported Syntax
+
+- **`$.field`** - Access top-level field
+- **`$.nested.field`** - Access nested field
+- **`$.array[0]`** - Access array element by index
+- **`$.object.array[0].field`** - Combine nesting and arrays
+
+### Examples
+
+Given this payload:
+```json
+{
+  "event": "meeting.started",
+  "payload": {
+    "account_id": "acc123",
+    "participants": [
+      {"name": "Alice", "email": "alice@example.com"},
+      {"name": "Bob", "email": "bob@example.com"}
+    ],
+    "metadata": {
+      "region": "us-west"
+    }
+  }
+}
+```
+
+Valid paths:
+- `$.event` → `"meeting.started"`
+- `$.payload.account_id` → `"acc123"`
+- `$.payload.participants[0].name` → `"Alice"`
+- `$.payload.metadata.region` → `"us-west"`
+
+## Complete Examples
+
+### Zoom Meeting Events
+
+**Use Case:** 
+- Block test and inactive accounts
+- Only process meeting lifecycle events
+- Route events to account-specific topics
+
+```json
+{
+  "topic": "zoom.events.default",
+  "signature_key": "whsec_zoom_secret",
+  "filters": [
+    {
+      "path": "$.payload.account_id",
+      "operator": "not_in",
+      "value": ["test_account", "blocked_acc_1", "blocked_acc_2"]
+    },
+    {
+      "path": "$.event",
+      "operator": "in",
+      "value": [
+        "meeting.started",
+        "meeting.ended",
+        "meeting.participant_joined",
+        "meeting.participant_left"
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "path": "$.payload.account_id",
+      "mapping": [
+        {"value": "enterprise_acc_123", "topic": "zoom.enterprise.account-123"},
+        {"value": "enterprise_acc_456", "topic": "zoom.enterprise.account-456"},
+        {"value": "startup_acc_789", "topic": "zoom.startup.account-789"}
+      ]
+    }
+  ]
+}
+```
+
+**Create this handler:**
+```bash
+API_KEY="your-api-key" ./examples/zoom-webhook-setup.sh
+```
+
+**Test it:**
+```bash
+./examples/zoom-test-webhook.sh https://your-webhook-url/handler/xxx
+```
+
+### Stripe Webhooks
+
+**Use Case:**
+- Filter out test mode events in production
+- Route payment events separately from customer events
+
+```json
+{
+  "topic": "stripe.events.other",
+  "signature_key": "whsec_stripe_secret",
+  "filters": [
+    {
+      "path": "$.livemode",
+      "operator": "equals",
+      "value": true
+    }
+  ],
+  "routes": [
+    {
+      "path": "$.type",
+      "mapping": [
+        {"value": "payment_intent.succeeded", "topic": "stripe.payments.success"},
+        {"value": "payment_intent.failed", "topic": "stripe.payments.failed"},
+        {"value": "charge.succeeded", "topic": "stripe.charges"},
+        {"value": "customer.created", "topic": "stripe.customers"},
+        {"value": "customer.updated", "topic": "stripe.customers"},
+        {"value": "subscription.created", "topic": "stripe.subscriptions"},
+        {"value": "subscription.updated", "topic": "stripe.subscriptions"}
+      ]
+    }
+  ]
+}
+```
+
+### GitHub Webhooks
+
+**Use Case:**
+- Only process events from specific repositories
+- Route by event type (push, PR, issues)
+
+```json
+{
+  "topic": "github.events.other",
+  "signature_key": "whsec_github_secret",
+  "filters": [
+    {
+      "path": "$.repository.full_name",
+      "operator": "in",
+      "value": ["myorg/repo1", "myorg/repo2", "myorg/repo3"]
+    }
+  ],
+  "routes": [
+    {
+      "path": "$.action",
+      "mapping": [
+        {"value": "push", "topic": "github.pushes"},
+        {"value": "opened", "topic": "github.pull-requests"},
+        {"value": "closed", "topic": "github.pull-requests"},
+        {"value": "created", "topic": "github.issues"}
+      ]
+    }
+  ]
+}
+```
+
+## Best Practices
+
+### 1. Start Simple, Then Add Complexity
+
+Begin with basic filtering and routing, then refine as needed:
+
+```json
+// Phase 1: Basic setup
+{
+  "topic": "webhooks.all"
+}
+
+// Phase 2: Add filtering
+{
+  "topic": "webhooks.all",
+  "filters": [
+    {"path": "$.account_id", "operator": "not_in", "value": ["blocked"]}
+  ]
+}
+
+// Phase 3: Add routing
+{
+  "topic": "webhooks.default",
+  "filters": [...],
+  "routes": [...]
+}
+```
+
+### 2. Use Descriptive Topic Names
+
+Good topic naming helps downstream consumers:
+
+```
+✓ zoom.enterprise.account-123
+✓ stripe.payments.success
+✓ github.repo-myapp.pushes
+
+✗ topic1
+✗ data
+✗ events
+```
+
+### 3. Be Specific with Filters
+
+Overly broad filters can accidentally block valid events:
+
+```json
+// ✗ Too broad - might block legitimate events
+{
+  "path": "$.payload.email",
+  "operator": "not_contains",
+  "value": "test"
+}
+
+// ✓ More specific
+{
+  "path": "$.payload.account_id",
+  "operator": "not_in",
+  "value": ["test_account_1", "test_account_2"]
+}
+```
+
+### 4. Monitor Filtered Events
+
+Check operator logs to see what's being filtered:
+
+```bash
+kubectl logs -l app=webhook-operator | grep "Event filtered out"
+```
+
+### 5. Test Your Configuration
+
+Always test with sample payloads before going to production:
+
+```bash
+# Test with various scenarios
+./examples/send-webhook.sh
+```
+
+### 6. Document Your Routing Rules
+
+Keep a record of which accounts/IDs map to which topics:
+
+```
+# Zoom Account Routing
+enterprise_acc_123 → zoom.enterprise.account-123 (ACME Corp)
+enterprise_acc_456 → zoom.enterprise.account-456 (Widgets Inc)
+startup_acc_789 → zoom.startup.account-789 (NewCo)
+```
+
+### 7. Use Filters for Security
+
+Filters can be a security layer:
+
+```json
+{
+  "filters": [
+    {
+      "path": "$.payload.account_id",
+      "operator": "not_in",
+      "value": ["suspended_account", "terms_violated_account"]
+    }
+  ]
+}
+```
+
+### 8. Plan for Default Topics
+
+Always have a sensible default topic for unmatched events:
+
+```json
+{
+  "topic": "webhooks.uncategorized",  // Catch-all for investigation
+  "routes": [...]
+}
+```
+
+## Troubleshooting
+
+### Event Not Appearing in Kafka
+
+1. **Check if filtered out:**
+   ```bash
+   kubectl logs -l app=webhook-operator | grep "filtered out"
+   ```
+
+2. **Verify JSONPath:**
+   Test your path with sample payload:
+   ```bash
+   echo '{"payload":{"account_id":"test"}}' | jq '.payload.account_id'
+   ```
+
+3. **Check routing logs:**
+   ```bash
+   kubectl logs -l app=webhook-operator | grep "routed to topic"
+   ```
+
+### Filter Not Working
+
+- Ensure the JSONPath is correct
+- Check that the value type matches (string vs number)
+- Verify the operator is spelled correctly
+- Look for extraction errors in logs
+
+### Routing to Wrong Topic
+
+- Routes are evaluated in order - first match wins
+- Check if an earlier route is matching unexpectedly
+- Verify the extracted value matches exactly (case-sensitive)
+
+## API Reference
+
+### Create Handler with Filters and Routes
+
+**Request:**
+```bash
+POST /config
+Headers:
+  X-Timestamp: <unix-timestamp>
+  X-Signature: sha256=<hmac-signature>
+  Content-Type: application/json
+
+Body:
+{
+  "topic": "default.topic",
+  "signature_key": "webhook-secret",
+  "filters": [ /* filter rules */ ],
+  "routes": [ /* routing rules */ ]
+}
+```
+
+**Response:**
+```json
+{
+  "handler_id": "uuid",
+  "webhook_url": "https://webhooks.example.com/handler/uuid"
+}
+```
+
+### Filter Rule Schema
+
+```typescript
+{
+  path: string,      // JSONPath expression
+  operator: "equals" | "not_equals" | "in" | "not_in" | "contains" | "not_contains",
+  value: string | number | string[] | number[]
+}
+```
+
+### Route Rule Schema
+
+```typescript
+{
+  path: string,      // JSONPath expression
+  mapping: [
+    {
+      value: string,   // Value to match
+      topic: string    // Target topic
+    }
+  ]
+}
+```
+
+## Performance Considerations
+
+- **Filter Evaluation**: O(n) where n = number of filters
+- **Routing Evaluation**: O(m × k) where m = routes, k = mappings per route
+- **JSONPath Extraction**: O(d) where d = depth of path
+
+For most use cases (< 10 filters, < 20 routes), performance impact is negligible (< 1ms per webhook).
+
+## Next Steps
+
+- See [examples/](../examples/) for working scripts
+- Review [README.md](../README.md) for general usage
+- Check operator logs for debugging: `kubectl logs -l app=webhook-operator`
