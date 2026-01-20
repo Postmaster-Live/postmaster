@@ -30,8 +30,8 @@ pub async fn ready(
     Extension(state): Extension<AppState>,
 ) -> (StatusCode, Json<HealthResponse>) {
     // Check multiple health indicators
-    let mut kafka_status = "unknown".to_string();
-    let mut k8s_status = "unknown".to_string();
+    let kafka_status: String;
+    let k8s_status: String;
     let mut is_ready = true;
 
     // 1. Check Kafka connection by attempting to get metadata

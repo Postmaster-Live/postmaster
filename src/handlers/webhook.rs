@@ -3,7 +3,7 @@ use axum::{
     http::{HeaderMap, StatusCode},
     Json,
 };
-use serde::{Deserialize, Serialize};
+use serde::{Serialize};
 use serde_json::json;
 use uuid::Uuid;
 
@@ -149,16 +149,17 @@ pub async fn handle_webhook(
         default_topic
     };
 
+
     // Convert headers to JSON
     let headers_json: serde_json::Value = headers
         .iter()
         .map(|(k, v)| {
             (
                 k.as_str().to_string(),
-                v.to_str().unwrap_or("").to_string(),
+                serde_json::Value::String(v.to_str().unwrap_or("").to_string()),
             )
         })
-        .collect::<serde_json::Map<_, _>>()
+        .collect::<serde_json::Map<String, serde_json::Value>>()
         .into();
 
     // Create Kafka message
